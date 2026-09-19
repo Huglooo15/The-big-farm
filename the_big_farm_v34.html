@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Big Farm — Genshin Farm Planner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap');
+:root{
+  --bg:#131a2e; --panel:#1b2440; --panel2:#212c50; --inset:#141c36;
+  --ink:#e8e4d8; --muted:#8b93ad; --gold:#d9b96a; --gold-dim:#a98f4e;
+  --teal:#7fd4c1; --warn:#e8a06a; --line:#303c63; --line-soft:#26305200;
+  --danger:#e07b7b; --purple:#b78cff; --purple-dim:#7e5ccc;
+  --display:'Genshin Impact','GenshinImpact','HYWenHei','HYWenHei-85W','Cinzel', Georgia, serif;
+  --body:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html{scrollbar-color:#39466f var(--bg)}
+body{background:var(--bg); color:var(--ink); font-family:var(--body); font-size:14px; line-height:1.45;
+  background-image:radial-gradient(ellipse 900px 420px at 70% -80px, #223059 0%, transparent 60%);
+  background-repeat:no-repeat; min-height:100vh}
+button{font-family:var(--body); cursor:pointer}
+input,select{font-family:var(--body); color:var(--ink); background:var(--inset); border:1px solid var(--line);
+  border-radius:6px; padding:5px 8px; font-size:13px; font-variant-numeric:tabular-nums}
+input:focus,select:focus{outline:2px solid var(--gold-dim); outline-offset:0; border-color:var(--gold-dim)}
+input[type=number]{width:90px; text-align:right}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{opacity:.3}
+
+.wrap{width:min(100% - 24px, 1800px); max-width:none; margin:0 auto; padding:0 0 80px}
+header.app{display:flex; align-items:baseline; gap:14px; padding:26px 0 4px; flex-wrap:wrap}
+header.app h1{font-family:var(--display); font-size:26px; letter-spacing:.06em; color:var(--gold); font-weight:700}
+header.app .sub{color:var(--muted); font-size:13px}
+header.app .spacer{flex:1}
+.iobtns{display:flex; gap:8px}
+.btn{background:var(--panel2); color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:6px 12px; font-size:13px}
+.btn:hover{border-color:var(--gold-dim)}
+.btn.primary{background:var(--gold); border-color:var(--gold); color:#1a1608; font-weight:600}
+.btn.primary:hover{background:#e5c87e}
+.btn.danger{color:var(--danger); border-color:#5a3a44}
+.btn.danger:hover{border-color:var(--danger)}
+.btn.small{padding:3px 9px; font-size:12px}
+
+/* storage banner */
+.banner{margin:10px 0 0; padding:8px 12px; border:1px solid var(--warn); border-radius:8px; color:var(--warn); font-size:13px; display:none}
+.banner.show{display:block}
+
+/* tab rail */
+nav.tabs{display:flex; align-items:flex-end; gap:4px; margin-top:20px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+nav.tabs .tab{background:transparent; border:1px solid transparent; border-bottom:none; color:var(--muted);
+  padding:9px 16px 10px; font-size:14px; border-radius:9px 9px 0 0; position:relative; display:flex; align-items:center; gap:8px}
+nav.tabs .tab:hover{color:var(--ink)}
+nav.tabs .tab.active{background:var(--panel); border-color:var(--line); color:var(--gold);}
+nav.tabs .tab.active::after{content:''; position:absolute; left:12px; right:12px; bottom:-1px; height:2px; background:var(--gold)}
+nav.tabs .tab.newtab{color:var(--gold)}
+nav.tabs .tab .x{color:var(--muted); font-size:12px; padding:0 2px; border-radius:4px}
+nav.tabs .tab .x:hover{color:var(--danger)}
+nav.tabs .push{flex:1}
+
+/* panels */
+.panel{background:var(--panel); border:1px solid var(--line); border-top:none; border-radius:0 0 12px 12px; padding:22px 22px 26px}
+h2{font-family:var(--display); font-size:17px; letter-spacing:.05em; color:var(--gold); margin:26px 0 10px; font-weight:600}
+h2:first-child{margin-top:0}
+h2 .tag{font-family:var(--body); letter-spacing:0; font-size:12px; color:var(--muted); font-weight:400; margin-left:8px}
+.hint{color:var(--muted); font-size:13px; margin:2px 0 12px}
+.row{display:flex; gap:22px; flex-wrap:wrap; align-items:flex-end; margin-bottom:14px}
+.field{display:flex; flex-direction:column; gap:4px}
+.field label{font-size:12px; color:var(--muted)}
+.field label .mini-note{display:block; color:var(--gold-dim); font-size:11px; margin-top:1px}
+.fromto{display:flex; align-items:center; gap:6px}
+.fromto .arr{color:var(--muted)}
+
+/* character cards in the form */
+.charcards{display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:14px; margin-top:6px}
+.card{background:var(--inset); border:1px solid var(--line); border-radius:10px; padding:14px}
+.card h3{font-family:var(--display); font-size:13px; color:var(--gold-dim); letter-spacing:.08em; margin-bottom:10px; font-weight:600}
+.card .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px 14px}
+.card input[type=text]{width:100%}
+.preview{margin-top:18px; padding:12px 16px; border:1px dashed var(--gold-dim); border-radius:10px; display:flex; gap:26px; flex-wrap:wrap; align-items:center}
+.preview b{color:var(--gold); font-size:18px; font-variant-numeric:tabular-nums}
+.preview span{color:var(--muted); font-size:13px}
+
+/* tables */
+.tblwrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px}
+table{border-collapse:collapse; width:100%; font-size:13px; font-variant-numeric:tabular-nums; white-space:nowrap}
+th,td{padding:6px 10px; border-bottom:1px solid #232d52; text-align:center}
+th{background:var(--panel2); color:var(--muted); font-weight:600; font-size:12px}
+th.group{font-family:var(--display); letter-spacing:.06em; color:var(--gold); font-size:12px; border-left:1px solid var(--line)}
+td.lbl, th.lbl{text-align:left; position:sticky; left:0; background:var(--panel); z-index:2; border-right:1px solid var(--line); min-width:170px}
+tr.sec td{background:var(--panel2); color:var(--gold-dim); font-family:var(--display); letter-spacing:.1em; font-size:11px; text-align:left; padding:4px 10px}
+tr.sec td.lbl{background:var(--panel2)}
+td.groupL{border-left:1px solid var(--line)}
+td .cur{width:82px; text-align:right; background:#2a2413; border-color:#57491f; color:#f0dfa8}
+td.done{color:var(--teal); font-weight:600}
+td.todo{color:var(--warn)}
+td.dash{color:#4d577c}
+tr.total td{background:var(--panel2); font-weight:700; border-top:1px solid var(--line)}
+tr.total td.big{color:var(--gold); font-size:15px}
+td.charname{color:var(--ink); font-weight:600}
+
+.materialtbl{font-size:12px; white-space:normal; width:max-content; min-width:max-content}
+.materialtbl th,.materialtbl td{padding:5px 6px; line-height:1.25}
+.materialtbl th{white-space:normal; min-width:0}
+.materialtbl th.lbl,.materialtbl td.lbl{min-width:150px; width:150px}
+.materialtbl td{white-space:nowrap}
+.materialtbl td .cur{width:58px}
+.materialtbl .note{font-size:10px; margin-top:2px; white-space:normal; max-width:95px; line-height:1.15}
+.materialtbl .passive-note{display:block; color:var(--muted); font-size:10px; font-style:italic; margin-top:2px; white-space:normal; max-width:100px; line-height:1.15}
+.materialtbl .smart-note{display:block; color:var(--muted); font-size:10px; font-style:italic; margin-top:2px; white-space:normal; max-width:110px; line-height:1.15}
+.materialtbl th.mat-needed,.materialtbl td.mat-needed{width:72px}
+.materialtbl th.mat-prior,.materialtbl td.mat-prior{width:94px}
+.materialtbl th.mat-live,.materialtbl td.mat-live{width:96px}
+.materialtbl th.mat-farm,.materialtbl td.mat-farm{width:74px}
+.materialtbl th.mat-days,.materialtbl td.mat-days{width:92px}
+.materialtbl td.tier-days{vertical-align:middle; text-align:center}
+.materialtbl td.tier-days .daynum{display:block; font-weight:700; margin-bottom:2px}
+.charhead{font-family:var(--display); color:var(--gold); letter-spacing:.05em; font-weight:600}
+.summarycard .value.gold,.passivebox b,.freedays b{font-family:var(--display); letter-spacing:.04em}
+
+.summarycards{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin:8px 0 14px}
+.summarycard{background:var(--inset); border:1px solid var(--line); border-radius:10px; padding:10px 12px; min-height:74px}
+.summarycard .label{color:var(--muted); font-size:12px; line-height:1.2}
+.summarycard .value{color:var(--ink); font-size:22px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums}
+.summarycard .value.gold{color:var(--gold)}
+.summarycard .sub{color:var(--muted); font-size:11px; margin-top:1px; line-height:1.2}
+.summarymini{max-width:780px; margin-bottom:16px}
+.summarymini table{white-space:normal}
+.summarymini th,.summarymini td{padding:6px 8px}
+.summarymini td .passive-note{display:block; color:var(--muted); font-size:10px; font-style:italic; margin-top:2px}
+
+/* overview chips */
+td .chip{display:inline-block; min-width:34px; padding:2px 8px; border-radius:20px; background:#3a3153; color:var(--warn); font-weight:600}
+td .chip.zero{background:#1e3b36; color:var(--teal)}
+td .chip.zero::after{content:' ✦'; font-size:10px}
+
+/* activity plan */
+.badge{display:inline-block; margin-left:8px; padding:2px 8px; border-radius:20px; background:#1e3b36; color:var(--teal); font-size:12px; font-weight:600}
+tr.ahead td{background:#1c2b3f}
+.freedays{margin-top:10px; font-size:14px}
+.freedays b{color:var(--gold)}
+.freedays.over b{color:var(--warn)}
+.activitydone{width:68px; max-width:100%; padding:4px 6px; text-align:center; background:var(--inset); color:var(--ink); border:1px solid var(--line); border-radius:7px; font-size:13px}
+.activitydone:focus{outline:1px solid var(--purple)}
+.activityhard{width:72px; max-width:100%; padding:4px 6px; text-align:center; background:var(--inset); color:var(--ink); border:1px solid var(--line); border-radius:7px; font-size:13px; font-variant-numeric:tabular-nums}
+.activityhard:focus{outline:1px solid var(--purple)}
+
+/* planning grid */
+.gridtbl{table-layout:fixed; min-width:760px; white-space:normal}
+.gridtbl td{padding:4px 5px; vertical-align:top; min-width:0; height:66px; position:relative}
+.gridtbl .date{font-size:11px; color:var(--muted); margin-bottom:3px}
+.gridcheck{appearance:none; -webkit-appearance:none; width:15px; height:15px; min-width:15px; margin:0; border:1px solid rgba(127,212,193,.45); border-radius:4px; background:rgba(10,16,34,.72); cursor:pointer; position:relative; box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
+.gridcheck:hover{border-color:var(--teal); box-shadow:0 0 0 2px rgba(127,212,193,.10)}
+.gridcheck:checked{background:linear-gradient(180deg,#8fe4d0,#54bfa9); border-color:#a9f3e2}
+.gridcheck:checked::after{content:'✓'; position:absolute; inset:-1px 0 0; display:grid; place-items:center; color:#10201d; font-size:12px; font-weight:900}
+.activityrow{display:flex; align-items:flex-end; justify-content:space-between; gap:4px; margin-top:5px; min-height:17px}
+.freedelta{display:block;font-size:9px;color:var(--aqua);font-weight:600;line-height:1.1;margin-top:2px}
+.completedrow{display:flex; align-items:center; justify-content:flex-end; gap:4px; margin:0; font-size:9px; color:var(--muted); line-height:1; white-space:nowrap}
+.completedrow .gridcheck{width:14px; height:14px; min-width:14px; margin:0; display:block}
+.activityrow select{margin:0 !important; flex:1 1 auto}
+.plan-low{color:var(--danger)!important; font-weight:700}
+.plan-equal{color:var(--ink)!important}
+.plan-high{color:var(--teal)!important; font-weight:700}
+.delta{font-size:9px; font-weight:700; margin-left:3px}
+.delta.low{color:var(--danger)}
+.delta.high{color:var(--teal)}
+.gridtbl select{width:100%; min-width:0; max-width:118px; font-size:12px; padding:3px 4px; display:block}
+.gridtbl select + select{margin-top:3px}
+.gridtbl td.outside{background:#050508; border-color:#050508}
+.gridtbl td.ev-open{background:linear-gradient(90deg, rgba(127,212,112,.22), transparent 75%)}
+.gridtbl td.ev-stygian{background:linear-gradient(90deg, rgba(232,160,106,.22), transparent 75%)}
+.gridtbl td.ev-double{background:linear-gradient(90deg, rgba(214,127,212,.22), transparent 75%)}
+.gridtbl td.mark-banner{box-shadow:inset 0 0 0 2px var(--purple)}
+.gridtbl td.mark-imaginarium{box-shadow:inset 0 0 0 2px #7fd4c1}
+.gridtbl td.mark-abyss{box-shadow:inset 0 0 0 2px var(--danger)}
+.gridtbl td.mark-banner.mark-imaginarium{box-shadow:inset 0 0 0 2px var(--purple), inset 0 0 0 4px #7fd4c1}
+.gridtbl td.mark-banner.mark-abyss{box-shadow:inset 0 0 0 2px var(--purple), inset 0 0 0 4px var(--danger)}
+.gridtbl td.mark-imaginarium.mark-abyss{box-shadow:inset 0 0 0 2px #7fd4c1, inset 0 0 0 4px var(--danger)}
+.gridtbl td.mark-banner.mark-imaginarium.mark-abyss{box-shadow:inset 0 0 0 2px var(--purple), inset 0 0 0 4px #7fd4c1, inset 0 0 0 6px var(--danger)}
+.gridtbl td.today{outline:2px solid var(--gold); outline-offset:-2px; border-radius:8px; background:#232b16}
+.gridtbl td.today .date{color:var(--gold); font-weight:700}
+.gridtbl td.today .date::after{content:'  TODAY'; font-size:9px; letter-spacing:.1em}
+.gridtbl select.donepick{border-color:var(--teal); color:var(--teal); animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(127,212,193,.0)} 50%{box-shadow:0 0 0 3px rgba(127,212,193,.25)}}
+@media (prefers-reduced-motion: reduce){ .gridtbl select.donepick{animation:none} }
+td.weeklbl{font-weight:700; color:var(--muted); text-align:left; min-width:76px}
+td.weeklbl .dd{display:block; font-size:10px; color:var(--gold-dim); letter-spacing:.08em; margin-top:2px}
+.gridtag{display:block; width:max-content; max-width:100%; margin:0 0 3px; padding:1px 6px; border-radius:8px; font-size:10px; line-height:1.1; color:#121826; font-weight:700; white-space:normal; overflow:visible; text-overflow:clip}
+.eventrow{display:flex; align-items:flex-start; justify-content:space-between; gap:4px; margin-bottom:3px}
+.bodytags,.sidetags{display:flex; flex-direction:column; gap:3px; min-width:0}
+.sidetags{margin-left:auto; align-items:flex-end}
+.gridtag.side{margin:0; max-width:74px; padding:1px 5px; border-radius:7px; font-size:9px; line-height:1.05; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.gridtag.open{background:#b8e8a6}
+.gridtag.stygian{background:#f0c7ab}
+.gridtag.double{background:#e7b5e8}
+.gridtag.banner{background:var(--purple); color:#171024}
+.gridtag.imaginarium{background:#9debdc; color:#11201d}
+.gridtag.abyss{background:#efa0a0; color:#241111}
+.legend{margin-top:8px; color:var(--muted); font-size:12px; display:flex; gap:10px 16px; flex-wrap:wrap; align-items:center}
+.legend .legend-item{display:inline-flex; align-items:center; gap:4px}
+.legend .sw{display:inline-block; width:10px; height:10px; border-radius:3px; vertical-align:-1px; margin-right:4px}
+.legend .sw.open{background:#b8e8a6}
+.legend .sw.stygian{background:#f0c7ab; margin-left:0}
+.legend .sw.double{background:#e7b5e8; margin-left:0}
+.legend .sw.banner{background:transparent; border:2px solid var(--purple); margin-left:0}
+.legend .sw.imaginarium{background:transparent; border:2px solid #7fd4c1; margin-left:0}
+.legend .sw.abyss{background:transparent; border:2px solid var(--danger); margin-left:0}
+.legend .swpulse{display:inline-block; width:10px; height:10px; border:2px solid var(--teal); border-radius:3px; vertical-align:-1px; margin:0 4px 0 0}
+.legend .sw2{display:inline-block; width:10px; height:10px; outline:2px solid var(--gold); outline-offset:-2px; border-radius:3px; vertical-align:-1px; margin:0 4px 0 0}
+
+/* owned step */
+.passivebox{margin:10px 0 14px; padding:10px 12px; border:1px dashed var(--gold-dim); border-radius:10px; color:var(--muted); font-size:13px}
+.passivebox b{color:var(--gold)}
+.passivebox .passive-note{display:block; margin-top:4px; max-width:none; font-size:12px; color:var(--muted); font-style:italic}
+.ownedcards{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.ownedtbl{white-space:normal}
+.ownedtbl th,.ownedtbl td{padding:4px 8px}
+.ownedtbl td.lbl,.ownedtbl th.lbl{position:static; min-width:155px; background:transparent}
+.ownedtbl input{width:92px; text-align:right}
+
+/* datasheet */
+.ds-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:18px}
+.ds-grid .tblwrap{align-self:start}
+.ds-grid input{width:100px; text-align:right}
+.ds-grid td.lbl{min-width:130px}
+.note{color:var(--muted); font-style:italic; font-size:12px}
+.planhead{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+.planhead .meta{color:var(--muted); font-size:13px}
+.planhead .spacer{flex:1}
+
+dialog{background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:12px; padding:22px; max-width:420px}
+dialog::backdrop{background:rgba(6,9,20,.7)}
+dialog p{margin-bottom:16px}
+dialog .btns{display:flex; gap:10px; justify-content:flex-end}
+@media(max-width:700px){ .wrap{width:calc(100% - 16px); padding:0 0 60px} .panel{padding:12px} .materialtbl{font-size:11px} }
+
+
+/* ================= Teyvat-inspired flair pass =================
+   CSS-only: no game assets or embedded font files. */
+:root{
+  --star:#f4df9d;
+  --glow:rgba(217,185,106,.22);
+  --aqua-glow:rgba(127,212,193,.13);
+  --violet-glow:rgba(157,132,219,.16);
+  --shadow-deep:rgba(4,7,18,.48);
+}
+body{
+  background:
+    radial-gradient(circle at 12% 16%, rgba(244,223,157,.13) 0 1px, transparent 2px),
+    radial-gradient(circle at 86% 18%, rgba(127,212,193,.12) 0 1px, transparent 2px),
+    radial-gradient(circle at 72% 72%, rgba(244,223,157,.08) 0 1px, transparent 2px),
+    linear-gradient(135deg, transparent 0 48%, rgba(217,185,106,.025) 50%, transparent 52%) 0 0/42px 42px,
+    radial-gradient(ellipse 1100px 460px at 70% -90px, #263765 0%, transparent 62%),
+    radial-gradient(ellipse 760px 360px at 8% 8%, rgba(217,185,106,.10), transparent 68%),
+    radial-gradient(ellipse 640px 360px at 96% 78%, rgba(127,212,193,.08), transparent 65%),
+    var(--bg);
+  overflow-x:hidden;
+}
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  opacity:.48;
+  background:
+    radial-gradient(circle, rgba(244,223,157,.28) 0 1px, transparent 1.8px) 18px 28px/118px 118px,
+    radial-gradient(circle, rgba(127,212,193,.18) 0 1px, transparent 1.6px) 82px 64px/156px 156px,
+    linear-gradient(90deg, transparent, rgba(217,185,106,.05), transparent) 0 0/100% 1px;
+  z-index:-1;
+}
+.wrap{position:relative}
+header.app{
+  position:relative;
+  padding-top:34px;
+}
+header.app::before,
+header.app::after{
+  content:'';
+  position:absolute;
+  top:18px;
+  height:1px;
+  width:min(38vw,420px);
+  background:linear-gradient(90deg, transparent, rgba(217,185,106,.65), transparent);
+}
+header.app::before{left:0}
+header.app::after{right:0}
+header.app h1{
+  position:relative;
+  text-shadow:0 0 18px rgba(217,185,106,.35), 0 1px 0 rgba(0,0,0,.55);
+}
+header.app h1::before,
+header.app h1::after{
+  color:var(--star);
+  font-size:.58em;
+  opacity:.9;
+  vertical-align:.18em;
+  text-shadow:0 0 14px rgba(244,223,157,.42);
+}
+header.app h1::before{content:'✦ '; margin-right:2px}
+header.app h1::after{content:' ✦'; margin-left:2px}
+header.app .sub{letter-spacing:.02em}
+.btn{
+  background:linear-gradient(180deg, rgba(44,58,104,.96), rgba(28,38,72,.96));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 8px 18px rgba(0,0,0,.10);
+}
+.btn:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 0 0 1px rgba(217,185,106,.12), 0 8px 18px rgba(0,0,0,.12)}
+.btn.primary{
+  background:linear-gradient(180deg, #f2d486, #c99d45);
+  box-shadow:0 0 0 1px rgba(255,246,204,.18) inset, 0 8px 20px rgba(217,185,106,.14);
+}
+input,select{
+  background:linear-gradient(180deg, rgba(21,31,60,.98), rgba(15,23,46,.98));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+input:focus,select:focus{box-shadow:0 0 0 3px rgba(217,185,106,.12), inset 0 1px 0 rgba(255,255,255,.04)}
+
+/* darker native dropdown menu options */
+select{
+  color-scheme:dark;
+  background-color:#111a34;
+}
+select option{
+  background-color:#111a34;
+  color:#e8e4d8;
+}
+select option:checked{
+  background-color:#2f4075;
+  color:#fff6d7;
+}
+select option:disabled{
+  background-color:#0d1428;
+  color:#6f7898;
+}
+nav.tabs{border-bottom-color:rgba(217,185,106,.24)}
+nav.tabs .tab{
+  background:linear-gradient(180deg, rgba(33,44,80,.42), rgba(27,36,64,0));
+  transition:color .15s ease, border-color .15s ease, transform .15s ease;
+}
+nav.tabs .tab:hover{transform:translateY(-1px)}
+nav.tabs .tab.active{
+  background:linear-gradient(180deg, rgba(42,55,98,.98), rgba(27,36,64,.98));
+  box-shadow:0 -8px 28px rgba(217,185,106,.06), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.panel{
+  position:relative;
+  background:linear-gradient(180deg, rgba(35,47,88,.96), rgba(27,36,64,.98) 18%, rgba(20,28,54,.98));
+  border-color:rgba(217,185,106,.18);
+  box-shadow:0 22px 55px var(--shadow-deep), inset 0 1px 0 rgba(255,255,255,.04);
+  overflow:hidden;
+}
+.panel::before{
+  content:'';
+  position:absolute;
+  inset:12px;
+  pointer-events:none;
+  border-radius:8px;
+  background:
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left top/46px 1px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left top/1px 46px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right top/46px 1px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right top/1px 46px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left bottom/46px 1px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left bottom/1px 46px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right bottom/46px 1px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right bottom/1px 46px no-repeat;
+  opacity:.45;
+  z-index:0;
+}
+.panel > *{position:relative; z-index:1}
+h2{
+  position:relative;
+  padding-left:20px;
+  text-shadow:0 0 14px rgba(217,185,106,.18);
+}
+h2::before{
+  content:'✧';
+  position:absolute;
+  left:0;
+  top:-1px;
+  color:var(--star);
+  font-size:.9em;
+  text-shadow:0 0 14px rgba(244,223,157,.45);
+}
+h2::after{
+  content:'';
+  display:block;
+  height:1px;
+  margin-top:6px;
+  width:min(420px, 100%);
+  background:linear-gradient(90deg, rgba(217,185,106,.62), rgba(127,212,193,.20), transparent);
+}
+.planhead h2::after{width:160px}
+.card,.summarycard,.tblwrap,.passivebox{
+  border-color:rgba(217,185,106,.18);
+  box-shadow:0 14px 32px rgba(3,6,18,.18), inset 0 1px 0 rgba(255,255,255,.035);
+}
+.card,.summarycard{
+  background:
+    radial-gradient(circle at 92% 10%, rgba(217,185,106,.09), transparent 34%),
+    linear-gradient(180deg, rgba(23,33,64,.98), rgba(17,25,50,.98));
+}
+.card h3::before{content:'✦ '; color:var(--star); opacity:.86}
+.preview,.passivebox{
+  background:linear-gradient(135deg, rgba(217,185,106,.065), rgba(127,212,193,.04));
+}
+.tblwrap{
+  background:linear-gradient(180deg, rgba(27,36,64,.70), rgba(17,25,50,.72));
+}
+th{
+  background:linear-gradient(180deg, rgba(40,53,96,.98), rgba(33,44,80,.98));
+}
+th.group{
+  background:linear-gradient(180deg, rgba(49,58,95,.98), rgba(35,45,80,.98));
+  text-shadow:0 0 12px rgba(217,185,106,.18);
+}
+td.lbl, th.lbl{background:linear-gradient(180deg, rgba(27,36,64,.98), rgba(23,32,61,.98))}
+tr.sec td{
+  background:linear-gradient(90deg, rgba(217,185,106,.14), rgba(33,44,80,.98) 18%, rgba(33,44,80,.74));
+  color:#f0cc7a;
+}
+tr.total td{
+  background:linear-gradient(180deg, rgba(42,55,98,.98), rgba(33,44,80,.98));
+}
+.summarycard .value.gold{ text-shadow:0 0 14px rgba(217,185,106,.25) }
+td .chip{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(255,255,255,.03);
+}
+td .chip.zero{box-shadow:0 0 0 1px rgba(127,212,193,.12), 0 0 16px rgba(127,212,193,.08)}
+.badge,.gridtag{
+  box-shadow:0 2px 8px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.22);
+}
+.gridtbl td:not(.outside){
+  background-image:radial-gradient(circle at 92% 8%, rgba(217,185,106,.075), transparent 32%);
+}
+.gridtbl td.ev-open{background:linear-gradient(90deg, rgba(127,212,112,.25), rgba(27,36,64,.18) 72%), radial-gradient(circle at 92% 8%, rgba(217,185,106,.08), transparent 32%)}
+.gridtbl td.ev-stygian{background:linear-gradient(90deg, rgba(232,160,106,.25), rgba(27,36,64,.18) 72%), radial-gradient(circle at 92% 8%, rgba(217,185,106,.08), transparent 32%)}
+.gridtbl td.ev-double{background:linear-gradient(90deg, rgba(214,127,212,.24), rgba(27,36,64,.18) 72%), radial-gradient(circle at 92% 8%, rgba(217,185,106,.08), transparent 32%)}
+.gridtbl td.today{
+  background:linear-gradient(180deg, rgba(57,54,22,.80), rgba(31,38,24,.92));
+  box-shadow:inset 0 0 22px rgba(217,185,106,.10);
+}
+.gridtag.open{background:linear-gradient(180deg,#d4f5bd,#9fdb87)}
+.gridtag.stygian{background:linear-gradient(180deg,#f7d8c1,#e5ad84)}
+.gridtag.double{background:linear-gradient(180deg,#f1c9f0,#ce93d8)}
+.gridtag.banner{background:linear-gradient(180deg,#d9c0ff,#a678ee); color:#171024}
+.gridtag.imaginarium{background:linear-gradient(180deg,#c5fff2,#81ddcb)}
+.gridtag.abyss{background:linear-gradient(180deg,#ffc2bd,#df7f7a)}
+.legend .sw{box-shadow:0 0 10px rgba(217,185,106,.09)}
+dialog{
+  background:linear-gradient(180deg, rgba(35,47,88,.98), rgba(20,28,54,.98));
+  border-color:rgba(217,185,106,.26);
+  box-shadow:0 22px 55px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.04);
+}
+@media(max-width:700px){
+  header.app::before,header.app::after{width:34vw}
+  h2{padding-left:17px}
+  .panel::before{inset:8px; opacity:.28}
+}
+
+
+/* v15 polish: English weekdays + purple Banner swap + compact legend markers */
+.gridtbl td.mark-banner{box-shadow:inset 0 0 0 2px var(--purple)}
+.gridtbl td.mark-banner.mark-imaginarium{box-shadow:inset 0 0 0 2px var(--purple), inset 0 0 0 4px #7fd4c1}
+.gridtbl td.mark-banner.mark-abyss{box-shadow:inset 0 0 0 2px var(--purple), inset 0 0 0 4px var(--danger)}
+.gridtbl td.mark-banner.mark-imaginarium.mark-abyss{box-shadow:inset 0 0 0 2px var(--purple), inset 0 0 0 4px #7fd4c1, inset 0 0 0 6px var(--danger)}
+.gridtag.banner{background:linear-gradient(180deg,#d9c0ff,#a678ee); color:#171024}
+.legend .sw,.legend .swpulse,.legend .sw2{width:10px; height:10px; min-width:10px; max-width:10px; margin:0; flex:0 0 10px}
+.legend .sw{border:2px solid transparent}
+.legend .sw.banner{background:transparent; border-color:var(--purple)}
+.legend .sw.imaginarium{background:transparent; border-color:#7fd4c1}
+.legend .sw.abyss{background:transparent; border-color:var(--danger)}
+
+/* v16 Step 2: make starting inventory use the same sectioned material layout */
+.amountprior-tbl th.mat-needed,.amountprior-tbl td.mat-needed{width:72px}
+.amountprior-tbl th.mat-prior,.amountprior-tbl td.mat-prior{width:104px}
+.amountprior-tbl th.mat-farm,.amountprior-tbl td.mat-farm{width:74px}
+.amountprior-tbl th.mat-days,.amountprior-tbl td.mat-days{width:88px}
+.amountprior-tbl td .cur{width:68px}
+.amountprior-tbl .passive-note,.amountprior-tbl .smart-note{margin-inline:auto}
+.amountprior-tbl td.tier-days{vertical-align:middle; text-align:center}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <h1>THE BIG FARM</h1>
+    <span class="sub">Genshin Impact farm planner — everything stays on your device</span>
+    <span class="spacer"></span>
+    <span class="iobtns">
+      <button class="btn small" onclick="exportJSON()">Export backup</button>
+      <button class="btn small" onclick="document.getElementById('importfile').click()">Import backup</button>
+      <input type="file" id="importfile" accept=".json" style="display:none" onchange="importJSON(this)">
+    </span>
+  </header>
+  <div class="banner" id="storagebanner">Preview mode: your browser storage is unavailable here, so changes are not saved. Download this file and open it on your own computer to keep your data.</div>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="panel" id="view"></div>
+</div>
+
+<dialog id="confirmdlg">
+  <p id="confirmtext"></p>
+  <div class="btns">
+    <button class="btn" onclick="document.getElementById('confirmdlg').close()">Cancel</button>
+    <button class="btn danger" id="confirmyes">Delete</button>
+  </div>
+</dialog>
+
+<script>
+'use strict';
+/* ================= data & storage ================= */
+const DEFAULT_DS = {
+  charLevels: { // cumulative from lvl 1
+    1:  {mora:0,       xp:0,   boss:0,  g1:0, g2:0, g3:0, g4:0},
+    80: {mora:1142010, xp:247, boss:26, g1:1, g2:9, g3:9, g4:0},
+    81: {mora:1298645, xp:257, boss:46, g1:1, g2:9, g3:9, g4:6},
+    90: {mora:1946635, xp:419, boss:46, g1:1, g2:9, g3:9, g4:6},
+  },
+  talentCum: { // index = level-1, cumulative from lvl 1
+    mora:  [0,12500,30000,55000,85000,122500,242500,502500,952500,1652500],
+    green: [0,3,3,3,3,3,3,3,3,3],
+    blue:  [0,0,2,6,12,21,21,21,21,21],
+    purple:[0,0,0,0,0,0,4,10,22,38],
+    boss:  [0,0,0,0,0,0,1,2,4,6],
+    crown: [0,0,0,0,0,0,0,0,0,1],
+  },
+  weapons: {
+    '-':               {mora:0,      g:0, b:0,  p:0,  gold:0, cry:0},
+    '4 Star (lvl 80)': {mora:315000, g:3, b:9,  p:9,  gold:0, cry:325},
+    '4 Star (lvl 90)': {mora:608370, g:3, b:9,  p:9,  gold:4, cry:573},
+    '5 Star (lvl 90)': {mora:985550, g:5, b:14, p:14, gold:6, cry:875},
+  },
+  assumptions: {
+    mora:   {v:61000, label:'Mora per 20 resin (leyline)'},
+    xp:     {v:5.5,   label:'XP books per 20 resin (leyline)'},
+    tal:    {v:8,     label:'Talent green-equivalents per 20 resin'},
+    wep:    {v:14,    label:'Weapon green-equivalents per 20 resin'},
+    boss:   {v:3,     label:'Boss materials per 40 resin'},
+    weekly: {v:2.2,   label:'Weekly boss materials per run'},
+    ore:    {v:40,    label:'Crystals craftable per day'},
+    patch:  {v:42,    label:'Days per patch'},
+  },
+  income: [
+    {src:'Battle Pass',         mora:540000,  books:54,   ore:108, note:'(Remove if Free to play, or different options selected)'},
+    {src:'Abyss',               mora:585000,  books:34.5, ore:72,  note:'(Based on 36 stars)'},
+    {src:'Stygian',             mora:500000,  books:25,   ore:0,   note:'(Based on fearless)'},
+    {src:'Imaginarium Theater', mora:600000,  books:0,    ore:0,   note:'(Based on Lunar clear)'},
+    {src:'Events',              mora:1500000, books:80,   ore:120, note:'(assumption)'},
+    {src:'Commissions',         mora:2287950, books:0,    ore:252, note:'(Based on 42 daily rewards)'},
+  ],
+};
+const ACTIVITIES = ['Weapon domain','Talent domain','Mora Leylines','XP Leylines','Boss','Artifacts','Condense','Other'];
+const ACTIVITY_ALIASES = {'Event DD':'', 'Double event':'', 'Rest':'Other'};
+const normalizeActivityName = v => Object.prototype.hasOwnProperty.call(ACTIVITY_ALIASES, v) ? ACTIVITY_ALIASES[v] : v;
+const MATS = [
+  {k:'mora', label:'Mora (all combined)', sec:'LEVELING', big:true, day:'mora'},
+  {k:'xp',   label:'XP Books',            sec:'LEVELING', day:'xp'},
+  {k:'boss', label:'Boss materials',      sec:'LEVELING', day:'boss'},
+  {k:'g1', label:'Gem: Sliver',   sec:'LEVELING'},
+  {k:'g2', label:'Gem: Fragment', sec:'LEVELING'},
+  {k:'g3', label:'Gem: Chunk',    sec:'LEVELING'},
+  {k:'g4', label:'Gem: Gemstone', sec:'LEVELING'},
+  {k:'tg', label:'Teachings (green)',     sec:'TALENTS', day:'talent'},
+  {k:'tb', label:'Guides (blue)',         sec:'TALENTS'},
+  {k:'tp', label:'Philosophies (purple)', sec:'TALENTS'},
+  {k:'wk', label:'Weekly boss mats',      sec:'TALENTS', day:'weekly', unit:' runs'},
+  {k:'crown', label:'Crown',              sec:'TALENTS'},
+  {k:'wg', label:'Weapon mats (green)',   sec:'WEAPON', day:'weapon'},
+  {k:'wb', label:'Weapon mats (blue)',    sec:'WEAPON'},
+  {k:'wp', label:'Weapon mats (purple)',  sec:'WEAPON'},
+  {k:'wgold', label:'Weapon mats (gold)', sec:'WEAPON'},
+  {k:'ore', label:'Crystals (ore)',       sec:'WEAPON', day:'ore'},
+];
+const MATKEYS = MATS.map(m=>m.k);
+
+let canStore = true;
+const store = {
+  get(){ try{ return JSON.parse(localStorage.getItem('the-big-farm-v1')); }catch(e){ canStore=false; return null; } },
+  set(s){ try{ localStorage.setItem('the-big-farm-v1', JSON.stringify(s)); }catch(e){ canStore=false; } },
+};
+function zeroMats(){ return Object.fromEntries(MATKEYS.map(k=>[k,0])); }
+function nextWednesdayISO(){
+  const d = new Date(); d.setHours(0,0,0,0);
+  const diff = (3 - d.getDay() + 7) % 7; // Sunday=0, Wednesday=3
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0,10);
+}
+function blankChar(){ return {name:'', lvlFrom:1, lvlTo:1, tal:[[1,1],[1,1],[1,1]], weaponName:'', rarity:'-',
+  prior:zeroMats(), current:zeroMats()}; }
+function blankDraft(){ return { editingId:null, name:'', startDate:nextWednesdayISO(),
+  numChars:1, resin:180, artifactBudget:1200, doubleEvent:true, doubleEventWeek:6, eventDD:7,
+  chars:[blankChar(),blankChar(),blankChar(),blankChar(),blankChar(),blankChar()] }; }
+function blankGrid(){ return Array.from({length:42},()=>['']); }
+function normalizeGrid(grid){
+  const out = blankGrid();
+  if(!Array.isArray(grid)) return out;
+  if(grid.length===42 && Array.isArray(grid[0])){
+    for(let i=0;i<42;i++) out[i][0] = normalizeActivityName((Array.isArray(grid[i]) ? grid[i][0] : grid[i]) || '');
+    return out;
+  }
+  const flat = [];
+  grid.forEach(row => Array.isArray(row) ? row.forEach(v=>flat.push(v)) : flat.push(row));
+  for(let i=0;i<42;i++) out[i][0] = normalizeActivityName(flat[i] || '');
+  return out;
+}
+function ensureChar(ch){
+  const base = blankChar(), oldCurrent = ch?.current || {}, oldPrior = ch?.prior || oldCurrent;
+  const out = {...base, ...(ch||{})};
+  out.tal = Array.isArray(out.tal) && out.tal.length===3 ? out.tal : [[1,9],[1,9],[1,9]];
+  out.prior = {...zeroMats(), ...oldPrior};
+  out.current = {...zeroMats(), ...(ch?.current || oldPrior)};
+  if(!state?.ds?.weapons?.[out.rarity]) out.rarity = '-';
+  return out;
+}
+function normalizePlanning(p){
+  p.numChars = Math.min(6, Math.max(1, +(p.numChars||1)));
+  p.resin = +(p.resin||180); p.artifactBudget = +(p.artifactBudget||1200);
+  if(p.doubleEvent == null) p.doubleEvent = true;
+  p.doubleEvent = !!p.doubleEvent;
+  p.doubleEventWeek = Math.min(7, Math.max(1, +(p.doubleEventWeek||6)));
+  p.eventDD = p.doubleEvent ? doubleEventDays(p) : 0;
+  if(!p.completedDays || typeof p.completedDays!=='object') p.completedDays = {};
+  Object.keys(p.completedDays).forEach(k=>{ p.completedDays[k] = !!p.completedDays[k]; });
+  if(!p.completed || typeof p.completed!=='object') p.completed = {};
+  for(const a of ACTIVITIES) p.completed[a] = Math.max(0, +(p.completed[a]||0));
+  if(!p.hardDays || typeof p.hardDays!=='object') p.hardDays = {};
+  for(const a of ACTIVITIES) {
+    if(p.hardDays[a] != null && Number.isFinite(+p.hardDays[a])) p.hardDays[a] = Math.max(0, Math.round(+p.hardDays[a]));
+  }
+  p.chars = (p.chars||[]).map(ensureChar);
+  while(p.chars.length<6) p.chars.push(blankChar());
+  p.grid = normalizeGrid(p.grid);
+  return p;
+}
+function normalizeState(){
+  if(!state.ds) state.ds = structuredClone(DEFAULT_DS);
+  if(!Array.isArray(state.plannings)) state.plannings = [];
+  state.plannings.forEach(normalizePlanning);
+}
+
+let state = store.get() || { ds: structuredClone(DEFAULT_DS), plannings: [], active:'new' };
+normalizeState();
+let draft = blankDraft();
+function save(){ store.set(state); document.getElementById('storagebanner').classList.toggle('show', !canStore); }
+
+/* ================= calculations ================= */
+const max0 = x => Math.max(0, x);
+const fmt = n => (n==null||n==='') ? '' : Number(n).toLocaleString('en-US');
+function charLvlCost(ds, from, to){
+  const a = ds.charLevels[from] || ds.charLevels[1], b = ds.charLevels[to] || ds.charLevels[1];
+  const out = {}; for(const k of ['mora','xp','boss','g1','g2','g3','g4']) out[k] = max0((b[k]||0)-(a[k]||0));
+  return out;
+}
+function talCost(ds, pairs){
+  const t = ds.talentCum, out = {mora:0,green:0,blue:0,purple:0,boss:0,crown:0};
+  for(const [f,to] of pairs) for(const k in out) out[k] += max0((t[k][to-1]||0)-(t[k][f-1]||0));
+  return out;
+}
+function needsFor(ds, ch){
+  const L = charLvlCost(ds, ch.lvlFrom, ch.lvlTo);
+  const T = talCost(ds, ch.tal);
+  const W = ds.weapons[ch.rarity] || ds.weapons['-'];
+  return { mora:L.mora+T.mora+W.mora, xp:L.xp, boss:L.boss, g1:L.g1, g2:L.g2, g3:L.g3, g4:L.g4,
+    tg:T.green, tb:T.blue, tp:T.purple, wk:T.boss, crown:T.crown,
+    wg:W.g, wb:W.b, wp:W.p, wgold:W.gold, ore:W.cry };
+}
+function patchLength(ds=state.ds){ return Math.max(1, Math.round(+(ds.assumptions?.patch?.v||42))); }
+function validDateFromIso(iso){
+  const d = new Date((iso||'') + 'T00:00:00');
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function countDateInPatch(p, dayOfMonth, ds=state.ds){
+  const start = validDateFromIso(p?.startDate);
+  if(!start) return 1;
+  let count = 0;
+  for(let i=0; i<patchLength(ds); i++){
+    const d = new Date(start);
+    d.setDate(start.getDate()+i);
+    if(d.getDate() === dayOfMonth) count++;
+  }
+  return count;
+}
+function incomeResetCounts(p=null, ds=state.ds){
+  return {
+    abyss: countDateInPatch(p, 16, ds),
+    imaginarium: countDateInPatch(p, 1, ds),
+  };
+}
+function incomeMultiplierForSource(src, counts){
+  const s = String(src||'');
+  if(/abyss/i.test(s)) return counts.abyss;
+  if(/imaginarium/i.test(s)) return counts.imaginarium;
+  return 1;
+}
+function incomeTotals(ds=state.ds, p=null){
+  const counts = incomeResetCounts(p, ds);
+  const out = {mora:0, xp:0, ore:0, counts, detail:[]};
+  (ds.income||[]).forEach(s=>{
+    const mult = incomeMultiplierForSource(s.src, counts);
+    const mora = (+s.mora||0) * mult;
+    const xp = (+s.books||0) * mult;
+    const ore = (+s.ore||0) * mult;
+    out.mora += mora; out.xp += xp; out.ore += ore;
+    out.detail.push({src:s.src, multiplier:mult, mora, xp, ore});
+  });
+  return out;
+}
+function incomeResetNote(income){
+  if(!income?.counts) return '';
+  return ` Abyss is counted ×${income.counts.abyss} and Imaginarium Theater ×${income.counts.imaginarium} for this patch window.`;
+}
+const PASSIVE_KEYS = ['mora','xp','ore'];
+const TOTAL_AMOUNT_KEYS = new Set(['mora','xp','ore']);
+const TIER_GROUPS = {
+  talent:{keys:['tg','tb','tp'], values:[1,3,9]},
+  weapon:{keys:['wg','wb','wp','wgold'], values:[1,3,9,27]},
+};
+function tierGroupForKey(k){ return Object.values(TIER_GROUPS).find(g=>g.keys.includes(k)); }
+function tierBalance(need, live, keys, values){
+  // Low → high crafting only. Excess higher-tier mats do not pay for lower-tier needs.
+  let carryEq = 0, shortageEq = 0;
+  const qty = {};
+  keys.forEach((k,i)=>{
+    const value = values[i];
+    const requiredEq = (+(need?.[k]||0)) * value;
+    const availableEq = (+(live?.[k]||0)) * value + carryEq;
+    if(availableEq >= requiredEq){
+      qty[k] = 0;
+      carryEq = availableEq - requiredEq;
+    } else {
+      const missingEq = requiredEq - availableEq;
+      shortageEq += missingEq;
+      qty[k] = Math.ceil(missingEq / value);
+      carryEq = 0;
+    }
+  });
+  return {shortageEq, qty};
+}
+function smartToFarm(need, live){
+  const out = {};
+  MATKEYS.forEach(k => out[k] = max0((+(need?.[k]||0)) - (+(live?.[k]||0))));
+  Object.values(TIER_GROUPS).forEach(g => {
+    const bal = tierBalance(need, live, g.keys, g.values);
+    g.keys.forEach(k => out[k] = bal.qty[k] || 0);
+  });
+  return out;
+}
+function applyPassiveSequential(chars, passive){
+  // Amount Prior and Live amount are separate buckets. Passive patch income is
+  // an additional source, so To farm is based on Prior + Live + Passive.
+  // Allocate passive income from left to right across characters without
+  // modifying either user-entered bucket.
+  const remaining = {mora:+passive.mora||0, xp:+passive.xp||0, ore:+passive.ore||0};
+  return chars.map(c=>{
+    const prior = {...zeroMats(), ...(c.ch.prior||{})};
+    const live  = {...zeroMats(), ...(c.ch.current||{})};
+    const passivePrior = zeroMats();
+    const passiveLive = zeroMats();
+    PASSIVE_KEYS.forEach(k=>{
+      const base = (+prior[k]||0) + (+live[k]||0);
+      const take = Math.min(max0((+c.need[k]||0) - base), remaining[k] || 0);
+      passivePrior[k] = take;
+      remaining[k] = max0((remaining[k]||0) - take);
+    });
+    return {...c, prior, live, passivePrior, passiveLive};
+  });
+}
+function effectiveAvailable(c,k){
+  return (+c.prior?.[k]||0) + (+c.live?.[k]||0) + (+c.passivePrior?.[k]||0);
+}
+function daysFor(ds, need, cur, resin){
+  const A = k => Math.max(0.0001, +(ds.assumptions[k]?.v||0));
+  const C = k => +(cur?.[k]||0);
+  const N = k => +(need?.[k]||0);
+  const talent = tierBalance(need, cur, TIER_GROUPS.talent.keys, TIER_GROUPS.talent.values);
+  const weapon = tierBalance(need, cur, TIER_GROUPS.weapon.keys, TIER_GROUPS.weapon.values);
+  const d = {};
+  d.mora   = Math.ceil(max0(N('mora') - C('mora')) / A('mora') * 20 / resin);
+  d.xp     = Math.ceil(max0(N('xp')   - C('xp'))   / A('xp')   * 20 / resin);
+  d.boss   = Math.ceil(max0(N('boss') - C('boss')) / A('boss') * 40 / resin);
+  d.talent = Math.ceil(talent.shortageEq / A('tal') * 20 / resin);
+  d.weapon = Math.ceil(weapon.shortageEq / A('wep') * 20 / resin);
+  d.weekly = Math.ceil(max0(N('wk')  - C('wk'))  / A('weekly'));
+  d.ore    = Math.ceil(max0(N('ore') - C('ore')) / A('ore'));
+  d.total  = d.mora + d.xp + d.boss + d.talent + d.weapon;
+  return d;
+}
+function captureBaseDays(p){
+  const saved = p.chars.map(ch => ch.current);
+  p.chars.forEach(ch => { ch.current = {...zeroMats()}; });
+  p.baseDays = null;
+  computePlanning(p);
+  p.chars.forEach((ch,i) => { ch.current = saved[i]; });
+  return p.baseDays;
+}
+function computePlanning(p){
+  const ds = state.ds;
+  p.grid = normalizeGrid(p.grid);
+  const baseChars = p.chars.slice(0, p.numChars).map(ch => {
+    ch = ensureChar(ch);
+    const need = needsFor(ds, ch);
+    return { ch, need };
+  });
+  const passive = incomeTotals(ds, p);
+  const chars = applyPassiveSequential(baseChars, passive).map(c => ({
+    ...c,
+    toFarm: smartToFarm(c.need, MATKEYS.reduce((o,k)=>(o[k]=effectiveAvailable(c,k),o),{})),
+    days: daysFor(ds, c.need, MATKEYS.reduce((o,k)=>(o[k]=effectiveAvailable(c,k),o),{}), p.resin),
+  }));
+  const tot = { need:{}, prior:{}, live:{}, toFarm:{}, days:{}, passive:{...passive} };
+  for(const k of MATKEYS){
+    const pass = passive[k] || 0;
+    tot.need[k]   = chars.reduce((sum,c)=>sum + c.need[k], 0);
+    tot.prior[k]  = chars.reduce((sum,c)=>sum + +(c.ch.prior[k]||0), 0);
+    tot.live[k]   = chars.reduce((sum,c)=>sum + +(c.ch.current[k]||0), 0);
+    tot.passive[k] = pass;
+  }
+  const totalAvailable = MATKEYS.reduce((o,k)=>{ o[k]=(tot.prior[k]||0)+(tot.live[k]||0)+(tot.passive[k]||0); return o; },{});
+  tot.toFarm = smartToFarm(tot.need, totalAvailable);
+  const pooledDays = daysFor(ds, tot.need, totalAvailable, p.resin);
+  // Shared resources stack across the whole planning, so their total days can be pooled.
+  // Domain/boss materials do not stack reliably between characters, so their total days
+  // are calculated per character and then summed.
+  tot.days = {
+    mora: pooledDays.mora,
+    xp: pooledDays.xp,
+    ore: pooledDays.ore,
+    boss: chars.reduce((s,c)=>s + c.days.boss, 0),
+    talent: chars.reduce((s,c)=>s + c.days.talent, 0),
+    weapon: chars.reduce((s,c)=>s + c.days.weapon, 0),
+    weekly: chars.reduce((s,c)=>s + c.days.weekly, 0),
+  };
+  tot.days.total = tot.days.mora + tot.days.xp + tot.days.boss + tot.days.talent + tot.days.weapon;
+  const planned = {}; ACTIVITIES.forEach(a=>planned[a]=0);
+  p.grid.flat().forEach(v => { v = normalizeActivityName(v); if(v && planned[v]!=null) planned[v]++; });
+  // Completed days are explicitly checked in the planning grid.
+  // Checking a date marks whatever activity is currently selected in that cell
+  // as completed; changing the activity automatically moves that completed day
+  // to the new activity.
+  const completed = {}; ACTIVITIES.forEach(a=>completed[a]=0);
+  p.grid.forEach((cell, day) => {
+    const v = normalizeActivityName(cell?.[0] || '');
+    if(v && completed[v] != null && p.completedDays[String(day)]) completed[v]++;
+  });
+  p.completed = completed;
+  const acts = [
+    {name:'Weapon domain', need:tot.days.weapon}, {name:'Talent domain', need:tot.days.talent},
+    {name:'Mora Leylines', need:tot.days.mora},   {name:'XP Leylines',   need:tot.days.xp},
+    {name:'Boss',          need:tot.days.boss},
+    {name:'Artifacts',     need:Math.ceil((p.artifactBudget||0)/p.resin)},
+    {name:'Condense',      need:null, neutral:true},
+    {name:'Other',         need:null, neutral:true},
+  ].map(a => {
+    const pl = planned[a.name]||0;
+    const done = Math.min(pl, Math.max(0, +(completed[a.name]||0)));
+    const fallbackHard = a.need == null ? 0 : a.need;
+    const hard = p.hardDays && p.hardDays[a.name] != null ? Math.max(0, Math.round(+p.hardDays[a.name])) : fallbackHard;
+    const toComplete = pl - done;
+    const planDelta = pl - hard;
+    return {...a, hardDays:hard, planned:pl, completed:done, still:toComplete, planDelta};
+  });
+  // Hard Days to farm are the player's baseline for the Activity Plan.
+  // Dynamic Days needed remains live and can change as inventory changes.
+  return { chars, tot, acts,
+    totNeeded: acts.reduce((s,a)=>s+a.hardDays,0),
+    totDynamicNeeded: acts.reduce((s,a)=>s+(a.need==null?0:a.need),0),
+    totPlanned: acts.reduce((s,a)=>s+a.planned,0),
+    totCompleted: acts.reduce((s,a)=>s+a.completed,0),
+    totStill: acts.reduce((s,a)=>s+a.still,0) };
+}
+
+/* ================= rendering ================= */
+const $tabs = document.getElementById('tabs');
+const $view = document.getElementById('view');
+function esc(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function render(){
+  save();
+  // tab rail — newest planning on the left
+  let h = `<button class="tab newtab ${state.active==='new'?'active':''}" onclick="openNew()">＋ ${draft.editingId?'Editing: '+esc(draft.name||'planning'):'Create new planning'}</button>`;
+  for(const p of state.plannings){
+    h += `<button class="tab ${state.active===p.id?'active':''}" onclick="openPlan('${p.id}')">${esc(p.name)}
+          <span class="x" title="Delete this planning" onclick="event.stopPropagation();delPlan('${p.id}')">✕</span></button>`;
+  }
+  h += `<span class="push"></span>
+        <button class="tab ${state.active==='ds'?'active':''}" onclick="state.active='ds';render()">Datasheet</button>`;
+  $tabs.innerHTML = h;
+  if(state.active==='new') renderForm();
+  else if(state.active==='ds') renderDatasheet();
+  else {
+    const p = state.plannings.find(x=>x.id===state.active);
+    if(p) renderPlanning(p); else { state.active='new'; renderForm(); }
+  }
+}
+function openNew(){ if(state.active!=='new'){ draft = blankDraft(); state.active='new'; render(); } }
+function openPlan(id){ state.active=id; render(); }
+
+/* -------- create / edit form -------- */
+
+function renderStep2AmountPrior(){
+  const stepDraft = structuredClone(draft);
+  stepDraft.grid = blankGrid();
+  stepDraft.chars = stepDraft.chars.map(ch=>{
+    const c = ensureChar(ch);
+    // Step 2 is the starting inventory. Live amount is intentionally separate
+    // and starts at zero until the user updates it on the full sheet.
+    c.current = {...zeroMats()};
+    return c;
+  });
+  stepDraft.eventDD = stepDraft.doubleEvent ? doubleEventDays(stepDraft) : 0;
+  const income = incomeTotals(state.ds, stepDraft);
+  const r = computePlanning(stepDraft);
+  const names = r.chars.map((c,i)=>c.ch.name.trim()||('Character '+(i+1)));
+  let h = `<h2>Step 2 — What you already own<span class="tag">this becomes Amount Prior; To farm and Days update from it</span></h2>
+  <div class="passivebox">Passive patch income from the Datasheet is added automatically before To farm and Days are calculated for Mora, XP books, and Crystals: Mora <b>${fmt(income.mora)}</b> · XP books <b>${fmt(income.xp)}</b> · Crystals <b>${fmt(income.ore)}</b>.<span class="passive-note">${incomeResetNote(income)}</span></div>
+  <div class="tblwrap"><table class="materialtbl amountprior-tbl">
+    <tr><th class="lbl">Material</th>${names.map(n=>`<th class="group charhead" colspan="4">${esc(n)}</th>`).join('')}</tr>
+    <tr><th class="lbl"></th>${names.map(()=>`<th class="groupL mat-needed">Needed</th><th class="mat-prior">Amount Prior</th><th class="mat-farm" title="Uses low-tier crafting for Talent and Weapon mats">To farm</th><th class="mat-days">Days to farm</th>`).join('')}</tr>`;
+  let lastSec = '';
+  MATS.forEach(m=>{
+    if(m.sec!==lastSec){ lastSec=m.sec; h += `<tr class="sec"><td class="lbl">${m.sec}</td><td colspan="${4*r.chars.length}"></td></tr>`; }
+    h += `<tr><td class="lbl">${m.label}</td>`;
+    r.chars.forEach((c,ci)=>{
+      const need = +(c.need[m.k]||0);
+      const rawPrior = +(c.ch.prior[m.k]||0);
+      const toF = +(c.toFarm[m.k]||0);
+      const passive = +(c.passivePrior[m.k]||0);
+      const passiveNote = passive ? `<span class="passive-note">+${fmt(passive)} passive</span>` : '';
+      const rawShort = max0(need - ((+(c.prior[m.k]||0)) + (+(c.ch.current[m.k]||0)) + (+(c.passivePrior[m.k]||0))));
+      const smartNote = tierGroupForKey(m.k) && rawShort !== toF ? `<span class="smart-note">after crafting</span>` : '';
+      const tierDayStarts = {tg:{rows:3, day:'talent', note:'all talent tiers'}, wg:{rows:4, day:'weapon', note:'all weapon tiers'}};
+      const tierDaySkips = new Set(['tb','tp','wb','wp','wgold']);
+      let dayCell = '';
+      if(tierDayStarts[m.k]){
+        const info = tierDayStarts[m.k];
+        dayCell = `<td class="mat-days tier-days" rowspan="${info.rows}"><span class="daynum">${c.days[info.day]}</span><span class="smart-note">${info.note}</span></td>`;
+      } else if(!tierDaySkips.has(m.k)){
+        const dayVal = m.day ? c.days[m.day] + (m.unit||'') : '—';
+        dayCell = `<td class="mat-days ${m.day?'':'dash'}">${dayVal}</td>`;
+      }
+      h += `<td class="groupL mat-needed">${fmt(need)}</td>
+        <td class="mat-prior"><input class="cur" type="number" min="0" value="${rawPrior}" onchange="setDraftPrior(${ci},'${m.k}',this.value)">${passiveNote}</td>
+        <td class="mat-farm ${toF===0?'done':'todo'}">${fmt(toF)}${smartNote}</td>
+        ${dayCell}`;
+    });
+    h += `</tr>`;
+  });
+  h += `</table></div>
+  <p class="hint" style="margin-top:6px">Talent and weapon tier days are combined once per group, while the material rows still show each tier. Low-tier crafting counts upward automatically.</p>`;
+  return h;
+}
+
+function renderForm(){
+  draft.chars = draft.chars.map(ensureChar);
+  const editing = !!draft.editingId;
+  let h = `<h2>Step 1 — ${editing?'Edit planning':'Create new planning'}<span class="tag">choose what you want to build</span></h2>
+  <div class="row">
+    <div class="field"><label>Planning name</label><input type="text" id="f_name" style="width:180px" placeholder="Version" value="${esc(draft.name)}" oninput="draft.name=this.value"></div>
+    <div class="field"><label>Patch start date (Wednesday)</label><input type="date" id="f_date" value="${draft.startDate}" onchange="draft.startDate=this.value"></div>
+    <div class="field"><label>Characters to build</label><select onchange="draft.numChars=+this.value;renderForm()">${[1,2,3,4,5,6].map(n=>`<option ${n===draft.numChars?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="field"><label>Resin per day</label><input type="number" value="${draft.resin}" min="40" step="10" onchange="draft.resin=+this.value||240;preview()"></div>
+    <div class="field"><label>Artifact resin budget <span class="mini-note">1200 = one Stygian feather</span></label><input type="number" value="${draft.artifactBudget}" min="0" step="40" onchange="draft.artifactBudget=+this.value||0;preview()"></div>
+    <div class="field"><label>Is there a double drop event?</label><select onchange="draft.doubleEvent=this.value==='yes'; if(draft.doubleEvent) draft.doubleEventWeek=6; draft.eventDD=draft.doubleEvent?doubleEventDays(draft):0; renderForm()"><option value="yes" ${draft.doubleEvent?'selected':''}>Yes</option><option value="no" ${!draft.doubleEvent?'selected':''}>No</option></select></div>
+    ${draft.doubleEvent ? `<div class="field"><label>Double drop week</label><select onchange="draft.doubleEventWeek=+this.value||6; draft.eventDD=doubleEventDays(draft); preview()">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${n===draft.doubleEventWeek?'selected':''}>Week ${n}</option>`).join('')}</select></div>` : ''}
+  </div>
+  <div class="charcards">`;
+  const lvls = [1,80,81,90];
+  const talLabels = ['NA','Skill','Burst'];
+  for(let i=0;i<draft.numChars;i++){
+    const c = draft.chars[i];
+    const lvlSel = (v,cb)=>`<select onchange="${cb}">${lvls.map(l=>`<option ${l===v?'selected':''}>${l}</option>`).join('')}</select>`;
+    const talSel = (v,cb)=>`<select onchange="${cb}">${[1,2,3,4,5,6,7,8,9,10].map(l=>`<option ${l===v?'selected':''}>${l}</option>`).join('')}</select>`;
+    const talentField = (j)=>`<div class="field"><label>Talent ${talLabels[j]} (from → to)</label><span class="fromto">${talSel(c.tal[j][0],`draft.chars[${i}].tal[${j}][0]=+this.value;preview()`)}<span class="arr">→</span>${talSel(c.tal[j][1],`draft.chars[${i}].tal[${j}][1]=+this.value;preview()`)}</span></div>`;
+    h += `<div class="card"><h3>CHARACTER ${i+1}</h3>
+      <div class="grid2">
+        <div class="field" style="grid-column:1/3"><label>Name</label><input type="text" value="${esc(c.name)}" oninput="draft.chars[${i}].name=this.value"></div>
+        <div class="field"><label>Level (from → to)</label><span class="fromto">${lvlSel(c.lvlFrom,`draft.chars[${i}].lvlFrom=+this.value;preview()`)}<span class="arr">→</span>${lvlSel(c.lvlTo,`draft.chars[${i}].lvlTo=+this.value;preview()`)}</span></div>
+        <div class="field"><label>Weapon name</label><input type="text" value="${esc(c.weaponName)}" oninput="draft.chars[${i}].weaponName=this.value"></div>
+        ${talentField(0)}
+        <div class="field"><label>Weapon rarity + lvl</label><select onchange="draft.chars[${i}].rarity=this.value;preview()">${Object.keys(state.ds.weapons).map(r=>`<option ${r===c.rarity?'selected':''}>${esc(r)}</option>`).join('')}</select></div>
+        ${talentField(1)}
+        ${talentField(2)}
+      </div></div>`;
+  }
+  h += `</div>
+  ${renderStep2AmountPrior()}
+  <div class="preview">Total farm days at average drops: <b id="prevdays">…</b><span id="prevsplit"></span></div>
+  <div class="row" style="margin-top:18px">
+    <button class="btn primary" onclick="doneForm()">${editing?'Save changes':'Done — create planning'}</button>
+    ${editing?`<button class="btn" onclick="draft=blankDraft();render()">Cancel edit</button>`:''}
+  </div>`;
+  $view.innerHTML = h;
+  preview();
+}
+function preview(){
+  const p = {...draft, grid:blankGrid()};
+  const r = computePlanning(p);
+  const el = document.getElementById('prevdays'); if(!el) return;
+  el.textContent = r.totNeeded + ' days';
+  document.getElementById('prevsplit').textContent =
+    `weapon ${r.tot.days.weapon} · talent ${r.tot.days.talent} · mora ${r.tot.days.mora} · xp ${r.tot.days.xp} · boss ${r.tot.days.boss} · artifacts ${r.acts[5].need}` +
+    ` — patch has ${state.ds.assumptions.patch.v} days`;
+}
+function setDraftPrior(ci,k,v){
+  const val = max0(+v||0);
+  draft.chars[ci].prior[k] = val;
+  if(!draft.editingId) draft.chars[ci].current[k] = val;
+  renderForm();
+}
+function doneForm(){
+  if(!draft.name.trim()){ alert('Give the planning a name first (for example: Version 5.8).'); return; }
+  draft.chars = draft.chars.map(ensureChar);
+  if(draft.editingId){
+    const p = state.plannings.find(x=>x.id===draft.editingId);
+    Object.assign(p, {name:draft.name.trim(), startDate:draft.startDate, numChars:draft.numChars,
+      resin:draft.resin, artifactBudget:draft.artifactBudget, doubleEvent:draft.doubleEvent, doubleEventWeek:draft.doubleEventWeek, eventDD:draft.doubleEvent ? doubleEventDays(draft) : 0, chars:draft.chars});
+    normalizePlanning(p);
+    state.active = p.id;
+  } else {
+    const p = {...structuredClone(draft), id:'p'+Date.now(), name:draft.name.trim(), created:new Date().toISOString().slice(0,10), grid:blankGrid()};
+    p.chars.forEach(ch=>{ ch.current = {...zeroMats()}; });
+    delete p.editingId;
+    normalizePlanning(p);
+    // Initialize hard Activity Plan values from the v29 calculated farm days.
+    if(!p.hardDays || !Object.keys(p.hardDays).length){
+      const rr = computePlanning(p);
+      p.hardDays = Object.fromEntries(rr.acts.map(a=>[a.name, a.need==null?0:a.need]));
+    }
+    state.plannings.unshift(p);        // newest on the left
+    state.active = p.id;
+  }
+  draft = blankDraft();
+  render();
+}
+function editPlan(id){
+  const p = state.plannings.find(x=>x.id===id); if(!p) return;
+  draft = {...structuredClone(p), editingId:id};
+  state.active='new'; render();
+}
+function delPlan(id){
+  const p = state.plannings.find(x=>x.id===id); if(!p) return;
+  const dlg = document.getElementById('confirmdlg');
+  document.getElementById('confirmtext').textContent = `Delete planning "${p.name}"? This also removes its grid and progress.`;
+  document.getElementById('confirmyes').onclick = ()=>{ dlg.close();
+    state.plannings = state.plannings.filter(x=>x.id!==id);
+    if(state.active===id) state.active = state.plannings[0]?.id || 'new';
+    render(); };
+  dlg.showModal();
+}
+
+/* -------- planning tab -------- */
+function chipCell(v){ return `<td><span class="chip ${v===0?'zero':''}">${v}</span></td>`; }
+function renderPlanning(p){
+  const r = computePlanning(p);
+  const names = r.chars.map((c,i)=>c.ch.name.trim()||('Char '+(i+1)));
+  const patch = state.ds.assumptions.patch.v;
+  const aheadActs = r.acts.filter(a=>a.still<0);
+  const doneActs = new Set(r.acts.filter(a=>a.need===0).map(a=>a.name));
+
+  let h = `<div class="planhead">
+      <h2 style="margin:0">${esc(p.name)}</h2>
+      <span class="meta">patch start ${fmtDate(p.startDate)} · ${p.numChars} character${p.numChars>1?'s':''} · ${p.resin} resin/day · double event ${p.doubleEvent ? 'Week '+p.doubleEventWeek : 'No'} · created ${p.created}</span>
+      <span class="spacer"></span>
+      <button class="btn small" onclick="editPlan('${p.id}')">Edit</button>
+      <button class="btn small danger" onclick="delPlan('${p.id}')">Delete</button>
+    </div>`;
+
+  /* days-left overview */
+  h += `<h2>Days left <span class="tag">live — updates as you fill in current amounts below</span></h2>
+  <div class="tblwrap"><table><tr><th class="lbl">Activity</th><th class="group">TOTAL</th>${names.map(n=>`<th class="charhead">${esc(n)}</th>`).join('')}</tr>`;
+  const rows = [['Mora Leylines','mora'],['XP Leylines','xp'],['Boss','boss'],['Talent domain','talent'],['Weapon domain','weapon']];
+  for(const [label,k] of rows){
+    h += `<tr><td class="lbl">${label}</td>${chipCell(r.tot.days[k])}${r.chars.map(c=>chipCell(c.days[k])).join('')}</tr>`;
+  }
+  h += `<tr class="total"><td class="lbl">TOTAL</td><td class="big">${r.tot.days.total}</td>${r.chars.map(c=>`<td>${c.days.total}</td>`).join('')}</tr></table></div>`;
+
+  if(aheadActs.length){
+    h += `<div class="freedays" style="margin-top:8px">✦ You're ahead of plan: ${aheadActs.map(a=>`<b>${a.name}</b> has ${-a.still} planned day${a.still<-1?'s':''} you can reassign`).join(', ')} — the pulsing boxes in the grid are the candidates.</div>`;
+  }
+
+  /* farm summary + materials table */
+  const summaryCards = [
+    {label:'TOTAL resin days', value:r.tot.days.total, sub:'excludes weekly bosses + crystal crafting', gold:true},
+    {label:'Mora Leylines', value:r.tot.days.mora, sub:'shared total'},
+    {label:'XP Leylines', value:r.tot.days.xp, sub:'shared total'},
+    {label:'Bosses', value:r.tot.days.boss, sub:'summed per character'},
+    {label:'Talent books', value:r.tot.days.talent, sub:'one combined domain count'},
+    {label:'Weapon mats', value:r.tot.days.weapon, sub:'one combined domain count'},
+    {label:'Weekly bosses', value:r.tot.days.weekly, sub:'runs'},
+    {label:'Crystals', value:r.tot.days.ore, sub:'crafting days'},
+  ];
+  h += `<h2>Farm summary <span class="tag">totals live here so the material table can stay clean</span></h2>
+  <div class="summarycards">${summaryCards.map(c=>`<div class="summarycard"><div class="label">${c.label}</div><div class="value ${c.gold?'gold':''}">${c.value}</div><div class="sub">${c.sub}</div></div>`).join('')}</div>
+  <div class="tblwrap summarymini"><table>
+    <tr><th class="lbl">Shared resource</th><th>Needed</th><th>Amount Prior</th><th>Live amount</th><th>To farm</th><th>Days still needed</th></tr>
+    ${[
+      {k:'mora', label:'Mora', farm:r.tot.days.mora},
+      {k:'xp', label:'XP Books', farm:r.tot.days.xp},
+      {k:'ore', label:'Crystals', farm:r.tot.days.ore},
+    ].map(s=>{
+      const passiveNote = r.tot.passive[s.k] ? `<span class="passive-note">+${fmt(r.tot.passive[s.k])} passive</span>` : '';
+      return `<tr><td class="lbl">${s.label}</td><td>${fmt(r.tot.need[s.k])}</td><td>${fmt(r.tot.prior[s.k])}${passiveNote}</td><td>${fmt(r.tot.live[s.k])}${passiveNote}</td><td class="${r.tot.toFarm[s.k]===0?'done':'todo'}">${fmt(r.tot.toFarm[s.k])}</td><td>${s.farm}</td></tr>`;
+    }).join('')}
+  </table></div>
+  <p class="hint" style="margin-top:6px">Crystals are shown as days, not routes: you can craft <b>40 crystals per day</b>, which takes <b>160 forging ores</b> because 1 crystal costs 4 ores.</p>`;
+
+  /* materials table */
+  h += `<h2>Materials <span class="tag">per-character inventory only — farm-day totals are summarized above</span></h2>
+  <div class="tblwrap"><table class="materialtbl">
+  <tr><th class="lbl">Material</th>${names.map(n=>`<th class="group charhead" colspan="5">${esc(n)}</th>`).join('')}</tr>
+  <tr><th class="lbl"></th>
+      ${names.map(()=>`<th class="groupL mat-needed">Needed</th><th class="mat-prior">Amount Prior</th><th class="mat-live">Live amount</th><th class="mat-farm" title="Uses low-tier crafting for Talent and Weapon mats">To farm</th><th class="mat-days">Days still needed</th>`).join('')}</tr>`;
+  let lastSec = '';
+  MATS.forEach(m => {
+    if(m.sec!==lastSec){ lastSec=m.sec; h += `<tr class="sec"><td class="lbl">${m.sec}</td><td colspan="${5*r.chars.length}"></td></tr>`; }
+    h += `<tr><td class="lbl">${m.label}</td>`;
+    r.chars.forEach((c,ci)=>{
+      const need=c.need[m.k], prior=+(c.prior[m.k]||0), live=+(c.live[m.k]||0), rawLive=+(c.ch.current[m.k]||0), toF=+(c.toFarm[m.k]||0);
+      const priorPassive = +(c.passivePrior[m.k]||0), livePassive = +(c.passiveLive[m.k]||0);
+      const priorNote = priorPassive ? `<span class="passive-note">+${fmt(priorPassive)} passive</span>` : '';
+      const liveNote = livePassive ? `<span class="passive-note">+${fmt(livePassive)} passive</span>` : '';
+      const rawShort = max0((need||0) - (live||0));
+      const smartNote = tierGroupForKey(m.k) && rawShort !== toF ? `<span class="smart-note">after crafting</span>` : '';
+      const tierDayStarts = {tg:{rows:3, day:'talent', note:'all talent tiers'}, wg:{rows:4, day:'weapon', note:'all weapon tiers'}};
+      const tierDaySkips = new Set(['tb','tp','wb','wp','wgold']);
+      let dayCell = '';
+      if(tierDayStarts[m.k]){
+        const info = tierDayStarts[m.k];
+        dayCell = `<td class="mat-days tier-days" rowspan="${info.rows}"><span class="daynum">${c.days[info.day]}</span><span class="smart-note">${info.note}</span></td>`;
+      } else if(!tierDaySkips.has(m.k)){
+        const dayVal = m.day ? c.days[m.day] + (m.unit||'') : '—';
+        dayCell = `<td class="mat-days ${m.day?'':'dash'}">${dayVal}</td>`;
+      }
+      h += `<td class="groupL mat-needed">${fmt(need)}</td>
+        <td class="mat-prior">${fmt(prior)}${priorNote}</td>
+        <td class="mat-live"><input class="cur" type="number" min="0" value="${rawLive}" onchange="setCur('${p.id}',${ci},'${m.k}',this.value)">${liveNote}</td>
+        <td class="mat-farm ${toF===0?'done':'todo'}">${fmt(toF)}${smartNote}</td>
+        ${dayCell}`;
+    });
+    h += `</tr>`;
+  });
+  h += `</table></div>
+  <p class="hint" style="margin-top:6px">The table above is only material inventory. Talent and weapon book tiers do not share between characters, so their farm days are merged once per tier group instead of repeated across every row. Low-tier crafting still counts upward automatically. Crystals use craft days: 40 crystals/day, using 160 forging ores/day.</p>`;
+
+  /* activity plan */
+  h += `<h2>Activity plan</h2>
+  <div class="tblwrap" style="max-width:900px"><table>
+  <tr><th class="lbl">Activity</th><th>Days to farm</th><th>Planned</th><th>Days still needed</th><th>Completed</th><th>To complete</th></tr>`;
+  for(const a of r.acts){
+    const pd = a.planDelta || 0;
+    const planClass = pd < 0 ? 'plan-low' : pd > 0 ? 'plan-high' : 'plan-equal';
+    const planDeltaHtml = pd !== 0 ? `<span class="delta ${pd<0?'low':'high'}">(${pd>0?'+':''}${pd})</span>` : '';
+    const tcClass = a.still <= 0 ? 'done' : 'todo';
+    const needText = a.need === null ? '—' : a.need;
+    h += `<tr><td class="lbl">${a.name}</td>
+      <td><input class="activityhard" type="number" min="0" step="1" value="${a.hardDays}" onchange="setActivityHard('${p.id}','${a.name}',this.value)"></td>
+      <td class="${planClass}">${a.planned}${planDeltaHtml}</td><td>${needText}</td><td>${a.completed}</td><td class="${tcClass}">${a.still}</td></tr>`;
+  }
+  const totalPlanDelta = r.totPlanned - r.totNeeded;
+  const totalPlanClass = totalPlanDelta < 0 ? 'plan-low' : totalPlanDelta > 0 ? 'plan-high' : 'plan-equal';
+  const totalPlanDeltaHtml = totalPlanDelta !== 0 ? `<span class="delta ${totalPlanDelta<0?'low':'high'}">(${totalPlanDelta>0?'+':''}${totalPlanDelta})</span>` : '';
+  const totalToCompleteClass = r.totStill <= 0 ? 'done' : 'todo';
+  h += `<tr class="total"><td class="lbl">TOTAL FARM</td><td>${r.totNeeded}</td><td class="${totalPlanClass}">${r.totPlanned}${totalPlanDeltaHtml}</td><td>${r.totDynamicNeeded}</td><td>${r.totCompleted}</td><td class="${totalToCompleteClass}">${r.totStill}</td></tr></table></div>
+  <div class="hint" style="margin-top:8px">Days to farm is your hard baseline for the Activity Plan. Days needed remains the live calculated requirement. Planned − Completed = To complete. Condense and Other are included in the totals.</div>
+  <div class="freedays ${patch-r.totNeeded<0?'over':''}">Free days this patch: <b>${patch - r.totNeeded}</b> <span class="hint" style="display:inline">(${patch} patch days − ${r.totNeeded} hard days to farm)</span></div>`;
+
+  /* planning grid */
+  h += `<h2>Planning grid <span class="tag">patch weeks are aligned Monday → Sunday; the patch itself starts on Wednesday</span></h2>
+  <div class="tblwrap"><table class="gridtbl"><tr><th class="lbl">Week</th>${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<th>${d}</th>`).join('')}</tr>`;
+  const today = new Date(); today.setHours(0,0,0,0);
+  p.grid = normalizeGrid(p.grid);
+  for(let w=0; w<7; w++){
+    h += `<tr><td class="lbl weeklbl">Wk ${w+1}</td>`;
+    for(let d=0; d<7; d++){
+      const day = patchDayForCell(w,d);
+      if(day==null){ h += `<td class="outside"></td>`; continue; }
+      const date = addDays(p.startDate, day);
+      const isToday = date.getTime()===today.getTime();
+      const ev = dayEvents(day, date, w, d, p);
+      const evClass = ev.map(e=>e.cell).join(' ');
+      const sideEvents = ev.filter(e=>e.side);
+      const bodyEvents = ev.filter(e=>!e.side);
+      const bodyHtml = bodyEvents.map(e=>`<span class="gridtag ${e.tag}">${e.label}</span>`).join('');
+      const sideHtml = sideEvents.map(e=>`<span class="gridtag side ${e.tag}">${e.label}</span>`).join('');
+      const tagHtml = (bodyHtml || sideHtml) ? `<div class="eventrow"><div class="bodytags">${bodyHtml}</div><div class="sidetags">${sideHtml}</div></div>` : '';
+      const v = p.grid[day]?.[0] || '';
+      const checked = !!p.completedDays?.[String(day)];
+      const picker = `<select onchange="setGridDay('${p.id}',${day},0,this.value)">
+        <option value=""></option>${ACTIVITIES.map(a=>`<option ${a===v?'selected':''}>${a}</option>`).join('')}</select>`;
+      const check = `<div class="completedrow"><span>Completed?</span><input class="gridcheck" type="checkbox" title="Mark this day as completed" ${checked?'checked':''} onchange="setGridCompleted('${p.id}',${day},this.checked)"></div>`;
+      const activityRow = `<div class="activityrow">${picker}${check}</div>`;
+      h += `<td class="${evClass} ${sideEvents.length?'has-side':''} ${isToday?'today':''}"><div class="date">${fmtCellDate(date)}</div>${tagHtml}${activityRow}</td>`;
+    }
+    h += `</tr>`;
+  }
+  h += `</table></div>
+  <div class="legend"><span class="legend-item"><span class="sw open"></span>All domains open</span><span class="legend-item"><span class="sw stygian"></span>Stygian</span><span class="legend-item"><span class="sw double"></span>Double event</span><span class="legend-item"><span class="sw banner"></span>Banner swap</span><span class="legend-item"><span class="sw imaginarium"></span>Imaginarium Theater</span><span class="legend-item"><span class="sw abyss"></span>Abyss reset</span><span class="legend-item"><span class="swpulse"></span>pulsing box = activity finished/over-planned</span><span class="legend-item"><span class="sw2"></span>gold outline = today</span></div>`;
+  $view.innerHTML = h;
+}
+function setCur(id,ci,k,v){ const p=state.plannings.find(x=>x.id===id); p.chars[ci].current[k]=max0(+v||0); render(); }
+function setGridDay(id,day,slot,v){ const p=state.plannings.find(x=>x.id===id); p.grid=normalizeGrid(p.grid); p.grid[day][slot]=v; render(); }
+function setGridCompleted(id,day,checked){ const p=state.plannings.find(x=>x.id===id); if(!p) return; if(!p.completedDays || typeof p.completedDays!=='object') p.completedDays={}; if(checked) p.completedDays[String(day)]=true; else delete p.completedDays[String(day)]; render(); }
+function setActivityHard(id,name,v){ const p=state.plannings.find(x=>x.id===id); if(!p) return; if(!p.hardDays || typeof p.hardDays!=='object') p.hardDays={}; p.hardDays[name]=Math.max(0,Math.round(+v||0)); render(); }
+function setActivityCompleted(id,name,v){ /* Completion is controlled by grid checkmarks. */ }
+function patchDayForCell(week,dow){
+  if(week===0) return dow<2 ? null : dow-2;       // Wk 1: Wednesday through Sunday
+  if(week>=1 && week<=5) return 5 + (week-1)*7 + dow; // Wk 2-6: full Monday through Sunday
+  if(week===6) return dow<2 ? 40+dow : null;      // Wk 7: Monday and Tuesday
+  return null;
+}
+function doubleEventDays(p){
+  if(!p?.doubleEvent) return 0;
+  const targetWeek = +(p.doubleEventWeek || 6);
+  let count = 0;
+  for(let d=0; d<7; d++) if(patchDayForCell(targetWeek-1, d) != null) count++;
+  return count;
+}
+function dayEvents(day, date, week, dow, p){
+  const ev = [];
+  if((day>=0 && day<=6) || (day>=20 && day<=26)) ev.push({label:'All domains<br>open', cell:'ev-open', tag:'open'});
+  if(day>=7 && day<=16) ev.push({label:'Stygian', cell:'ev-stygian', tag:'stygian'});
+  if(p?.doubleEvent && week + 1 === +(p.doubleEventWeek||6)) ev.push({label:'Double<br>event', cell:'ev-double', tag:'double'});
+  if(week===3 && dow===1) ev.push({label:'Banner<br>swap', cell:'mark-banner', tag:'banner', side:true});
+  if(date.getDate()===1) ev.push({label:'Imaginarium<br>Theater', cell:'mark-imaginarium', tag:'imaginarium', side:true});
+  if(date.getDate()===16) ev.push({label:'Abyss<br>reset', cell:'mark-abyss', tag:'abyss', side:true});
+  return ev;
+}
+function addDays(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d; }
+function fmtCellDate(d){ return d.toLocaleDateString('nl-NL',{day:'numeric',month:'numeric',year:'numeric'}); }
+function fmtShort(d){ return d.toLocaleDateString('nl-NL',{weekday:'short',day:'numeric',month:'short'}); }
+function fmtDate(iso){ return new Date(iso+'T00:00:00').toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'}); }
+
+/* -------- datasheet -------- */
+function renderDatasheet(){
+  const ds = state.ds;
+  let h = `<h2>Datasheet <span class="tag">the background data every calculation uses — adjust if the game changes or your luck disagrees</span></h2>
+  <div class="row"><button class="btn small" onclick="resetDS()">Reset everything to defaults</button></div>
+  <div class="ds-grid">`;
+
+  h += `<div><h2 style="font-size:14px">Assumptions (average drops)</h2><div class="tblwrap"><table>`;
+  for(const k in ds.assumptions){
+    const a = ds.assumptions[k];
+    h += `<tr><td class="lbl" style="min-width:240px">${a.label}</td>
+      <td><input type="number" step="any" value="${a.v}" onchange="state.ds.assumptions['${k}'].v=+this.value||0;render()"></td></tr>`;
+  }
+  h += `</table></div></div>`;
+
+  h += `<div><h2 style="font-size:14px">Weapon leveling (from lvl 1)</h2><div class="tblwrap"><table>
+    <tr><th class="lbl">Rarity / target</th><th>Mora</th><th>Green</th><th>Blue</th><th>Purple</th><th>Gold</th><th>Crystals</th></tr>`;
+  for(const w in ds.weapons){
+    if(w==='-') continue;
+    h += `<tr><td class="lbl">${esc(w)}</td>` + ['mora','g','b','p','gold','cry'].map(f=>
+      `<td><input type="number" style="width:${f==='mora'?'92px':'62px'}" value="${ds.weapons[w][f]}" onchange="state.ds.weapons['${w}'].${f}=+this.value||0;render()"></td>`).join('') + `</tr>`;
+  }
+  h += `</table></div></div>`;
+
+  h += `<div><h2 style="font-size:14px">Character ascension (cumulative from lvl 1)</h2><div class="tblwrap"><table>
+    <tr><th class="lbl">Lvl</th><th>Mora</th><th>XP Books</th><th>Boss</th><th>Sliver</th><th>Fragment</th><th>Chunk</th><th>Gemstone</th></tr>`;
+  for(const lv of [1,80,81,90]){
+    const c = ds.charLevels[lv];
+    h += `<tr><td class="lbl">${lv}</td>` + ['mora','xp','boss','g1','g2','g3','g4'].map(f=>
+      lv===1 ? `<td>0</td>` :
+      `<td><input type="number" style="width:${f==='mora'?'96px':'56px'}" value="${c[f]}" onchange="state.ds.charLevels[${lv}].${f}=+this.value||0;render()"></td>`).join('') + `</tr>`;
+  }
+  h += `</table></div></div>`;
+
+  h += `<div><h2 style="font-size:14px">Talent cost (cumulative from lvl 1)</h2><div class="tblwrap"><table>
+    <tr><th class="lbl">Lvl</th><th>Mora</th><th>Green</th><th>Blue</th><th>Purple</th><th>Boss</th><th>Crown</th></tr>`;
+  for(let i=0;i<10;i++){
+    h += `<tr><td class="lbl">${i+1}</td>` + ['mora','green','blue','purple','boss','crown'].map(f=>
+      i===0 ? `<td>0</td>` :
+      `<td><input type="number" style="width:${f==='mora'?'96px':'56px'}" value="${ds.talentCum[f][i]}" onchange="state.ds.talentCum.${f}[${i}]=+this.value||0;render()"></td>`).join('') + `</tr>`;
+  }
+  h += `</table></div></div>`;
+
+  h += `<div><h2 style="font-size:14px">Free income data</h2><p class="hint">Abyss and Imaginarium values are treated as per reset/appearance; the planner multiplies them by however many 16ths and 1sts happen inside the patch.</p><div class="tblwrap"><table>
+    <tr><th class="lbl">Source</th><th>Mora</th><th>XP Books</th><th>Mystic Ore</th><th style="text-align:left">Note</th></tr>`;
+  let ti={mora:0,books:0,ore:0};
+  ds.income.forEach((s,i)=>{
+    ti.mora+=s.mora; ti.books+=s.books; ti.ore+=s.ore;
+    h += `<tr><td class="lbl">${esc(s.src)}</td>` + ['mora','books','ore'].map(f=>
+      `<td><input type="number" step="any" style="width:${f==='mora'?'96px':'70px'}" value="${s[f]}" onchange="state.ds.income[${i}].${f}=+this.value||0;render()"></td>`).join('') +
+      `<td class="note" style="text-align:left">${esc(s.note)}</td></tr>`;
+  });
+  h += `<tr class="total"><td class="lbl">BASE TOTAL</td><td>${fmt(ti.mora)}</td><td>${ti.books}</td><td>${ti.ore}</td><td class="note" style="text-align:left">Before Abyss/IT date multipliers</td></tr>
+  </table></div></div>`;
+
+  h += `</div>`;
+  $view.innerHTML = h;
+}
+function resetDS(){ if(confirm('Reset all datasheet values to the built-in defaults?')){ state.ds = structuredClone(DEFAULT_DS); render(); } }
+
+/* -------- backup -------- */
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(state,null,1)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'the-big-farm-backup.json';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importJSON(el){
+  const f = el.files[0]; if(!f) return;
+  f.text().then(t=>{
+    try{ const s = JSON.parse(t);
+      if(!s.plannings || !s.ds) throw new Error('wrong file');
+      state = s; normalizeState(); render();
+    }catch(e){ alert('That file is not a valid backup of this planner.'); }
+  });
+  el.value='';
+}
+
+/* boot */
+store.set(state);   // probe storage so the banner is accurate
+render();
+</script>
+</body>
+</html>
